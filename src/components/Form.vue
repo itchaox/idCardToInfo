@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2023-11-19 13:58
+ * @LastTime   : 2023-11-19 14:29
  * @desc       : 
 -->
 <script setup>
@@ -97,33 +97,38 @@
 
     if (birthday.value) {
       const hasBirthday = fieldMetaList.find((item) => item.name === '生日');
-      judgeCreate(hasBirthday, '生日', 'DateTime', generateBirthdayRow);
+      await judgeCreate(hasBirthday, '生日', 'DateTime', generateBirthdayRow);
     }
 
     if (age.value) {
       const hasAge = fieldMetaList.find((item) => item.name === '年龄');
-      judgeCreate(hasAge, '年龄', 'Number', generateAgeRow);
+      await judgeCreate(hasAge, '年龄', 'Number', generateAgeRow);
     }
 
     if (sex.value) {
       const hasSex = fieldMetaList.find((item) => item.name === '性别');
-      judgeCreate(hasSex, '性别', 'Text', generateSexRow);
+      await judgeCreate(hasSex, '性别', 'Text', generateSexRow);
     }
 
     if (constellation.value) {
       const hasConstellation = fieldMetaList.find((item) => item.name === '星座');
-      judgeCreate(hasConstellation, '星座', 'Text', generateConstellationRow);
+      await judgeCreate(hasConstellation, '星座', 'Text', generateConstellationRow);
     }
 
     if (animal.value) {
       const hasAnimal = fieldMetaList.find((item) => item.name === '生肖');
-      judgeCreate(hasAnimal, '生肖', 'Text', generateAnimalRow);
+      await judgeCreate(hasAnimal, '生肖', 'Text', generateAnimalRow);
     }
 
     if (address.value) {
       const hasAddress = fieldMetaList.find((item) => item.name === '籍贯');
-      judgeCreate(hasAddress, '籍贯', 'Text', generateAddressRow);
+      await judgeCreate(hasAddress, '籍贯', 'Text', generateAddressRow);
     }
+
+    ElMessage({
+      type: 'success',
+      message: '数据生成结束!',
+    });
   }
 
   /**
@@ -137,16 +142,9 @@
     const table = await base.getActiveTable();
     if (!has) {
       await table.addField({ type: FieldType[type], name: label });
-      fn();
-    } else {
-      ElMessageBox.confirm(`已存在(${label}列) ,后续操作会覆盖前面${label}列数据,请确认是否继续?`, '警告', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }).then(() => {
-        fn();
-      });
     }
+
+    fn();
   }
 
   /**
@@ -292,6 +290,7 @@
     // 如果没有匹配的星座，返回空字符串或其他默认值
     return '';
   }
+
   /**
    * @desc  : 生成生肖列
    */
