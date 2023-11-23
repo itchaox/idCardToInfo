@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : wangchao
- * @LastTime   : 2023-11-23 16:01
+ * @LastTime   : 2023-11-23 16:08
  * @desc       : 
 -->
 <script setup>
@@ -248,6 +248,8 @@
       const cell = await record.getCellByField(fieldId.value);
       const val = await cell.val;
       if (!val) continue;
+
+      // FIXME 生成生日的这列，数组生成比较慢，需要排查原因
 
       // FIXME 处理数据
       _list.push({
