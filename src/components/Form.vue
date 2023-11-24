@@ -2,15 +2,15 @@
  * @Version    : v1.00
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
- * @LastAuthor : wangchao
- * @LastTime   : 2023-11-23 16:08
+ * @LastAuthor : itchaox
+ * @LastTime   : 2023-11-24 21:03
  * @desc       : 
 -->
 <script setup>
-  import { ref, onMounted } from "vue";
-  import { bitable, FieldType, DateFormatter } from "@lark-base-open/js-sdk";
-  import { ElMessage, ElMessageBox } from "element-plus";
-  import { addressCodeMap } from "@/addressCodeMap";
+  import { ref, onMounted } from 'vue';
+  import { bitable, FieldType, DateFormatter } from '@lark-base-open/js-sdk';
+  import { ElMessage, ElMessageBox } from 'element-plus';
+  import { addressCodeMap } from '@/addressCodeMap';
 
   const base = bitable.base;
 
@@ -19,41 +19,47 @@
 
   let dateFormatList = [
     {
-      name: "格式: 01-30",
-      value: "MM-dd",
+      name: '格式: 01-30',
+      value: 'MM-dd',
     },
     {
-      name: "格式: 2021/01/30",
-      value: "yyyy/MM/dd",
+      name: '格式: 2021/01/30',
+      value: 'yyyy/MM/dd',
     },
     {
-      name: "格式: 2021-01-30",
-      value: "yyyy-MM-dd",
+      name: '格式: 2021-01-30',
+      value: 'yyyy-MM-dd',
     },
     {
-      name: "格式: 01/30/2021",
-      value: "MM/dd/yyyy",
+      name: '格式: 01/30/2021',
+      value: 'MM/dd/yyyy',
     },
     {
-      name: "格式: 30/01/2021",
-      value: "dd/MM/yyyy",
+      name: '格式: 30/01/2021',
+      value: 'dd/MM/yyyy',
     },
   ];
-  let dateFormat = ref("yyyy-MM-dd");
+  let dateFormat = ref('yyyy-MM-dd');
 
   let table;
   let recordList;
   let recordIds;
   let tableMetaList;
 
+  const age = ref(false);
+  const sex = ref(false);
+  const birthday = ref(false);
+  const constellation = ref(false);
+  const animal = ref(false);
+  const address = ref(false);
+
   onMounted(async () => {
     table = await base.getActiveTable();
     recordList = await table.getRecordList();
     recordIds = await table.getRecordIdList(); // 获取所有记录 id
 
-    // const table = await base.getActiveTable();
     tableMetaList = await table.getFieldMetaList();
-    fieldOptions.value = tableMetaList.map((item) => ({ value: item.id, label: item.name }));
+    fieldOptions.value = tableMetaList.filter((item) => item.type === 1);
   });
 
   // 根据身份证生成生日的信息
@@ -94,50 +100,50 @@
   async function confirm() {
     if (!fieldId.value) {
       ElMessage({
-        type: "error",
-        message: "请选择身份证号码列!",
+        type: 'error',
+        message: '请选择身份证号码列!',
       });
       return;
     }
 
-    // const table = await base.getActiveTable();
-
-    // 获取字段列表
-    const fieldMetaList = tableMetaList;
+    ElMessage({
+      type: 'success',
+      message: '开始生成数据~',
+    });
 
     if (birthday.value) {
-      const hasBirthday = fieldMetaList.find((item) => item.name === "生日");
-      await judgeCreate(hasBirthday, "生日", "DateTime", generateBirthdayRow);
+      const hasBirthday = tableMetaList.find((item) => item.name === '生日');
+      await judgeCreate(hasBirthday, '生日', 'DateTime', generateBirthdayRow);
     }
 
     if (age.value) {
-      const hasAge = fieldMetaList.find((item) => item.name === "年龄");
-      await judgeCreate(hasAge, "年龄", "Number", generateAgeRow);
+      const hasAge = tableMetaList.find((item) => item.name === '年龄');
+      await judgeCreate(hasAge, '年龄', 'Number', generateAgeRow);
     }
 
     if (sex.value) {
-      const hasSex = fieldMetaList.find((item) => item.name === "性别");
-      await judgeCreate(hasSex, "性别", "Text", generateSexRow);
+      const hasSex = tableMetaList.find((item) => item.name === '性别');
+      await judgeCreate(hasSex, '性别', 'Text', generateSexRow);
     }
 
     if (constellation.value) {
-      const hasConstellation = fieldMetaList.find((item) => item.name === "星座");
-      await judgeCreate(hasConstellation, "星座", "Text", generateConstellationRow);
+      const hasConstellation = tableMetaList.find((item) => item.name === '星座');
+      await judgeCreate(hasConstellation, '星座', 'Text', generateConstellationRow);
     }
 
     if (animal.value) {
-      const hasAnimal = fieldMetaList.find((item) => item.name === "生肖");
-      await judgeCreate(hasAnimal, "生肖", "Text", generateAnimalRow);
+      const hasAnimal = tableMetaList.find((item) => item.name === '生肖');
+      await judgeCreate(hasAnimal, '生肖', 'Text', generateAnimalRow);
     }
 
     if (address.value) {
-      const hasAddress = fieldMetaList.find((item) => item.name === "籍贯");
-      await judgeCreate(hasAddress, "籍贯", "Text", generateAddressRow);
+      const hasAddress = tableMetaList.find((item) => item.name === '籍贯');
+      await judgeCreate(hasAddress, '籍贯', 'Text', generateAddressRow);
     }
 
     ElMessage({
-      type: "success",
-      message: "数据生成结束!",
+      type: 'success',
+      message: '数据生成结束!',
     });
   }
 
@@ -149,7 +155,6 @@
    * @param  {any} fn 生成函数
    */
   async function judgeCreate(has, label, type, fn) {
-    // const table = await base.getActiveTable();
     if (!has) {
       await table.addField({ type: FieldType[type], name: label });
     }
@@ -161,16 +166,14 @@
    * @desc  : 生成生日列
    */
   async function generateBirthdayRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("生日"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('生日');
 
     await field.setDateFormat(dateFormat.value);
 
     let _list = [];
     for (const record of recordList) {
       const id = record.id;
+
       // 获取索引
       const index = recordList.recordIdList.findIndex((iId) => iId === id);
       const cell = await record.getCellByField(fieldId.value);
@@ -184,25 +187,19 @@
           [field.id]: extractBirthdayAndTimestamp(val[0]?.text).timestamp,
         },
       });
-
-      // 根据身份证号码获取生日
-      // await table.setCellValue(field.id, recordIds[index], extractBirthdayAndTimestamp(val[0]?.text).timestamp);
-
-      // FIXME 此处一次性全部替换
-      await table.setRecords(_list);
     }
+
+    // FIXME 此处一次性全部替换
+    await table.setRecords(_list);
   }
 
   /**
    * @desc  : 生成年龄列
    */
   async function generateAgeRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("年龄"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('年龄');
 
-    await field.setFormatter("0");
+    await field.setFormatter('0');
 
     let _list = [];
     for (const record of recordList) {
@@ -220,13 +217,6 @@
           [field.id]: calculateAgeFromTimestamp(extractBirthdayAndTimestamp(val[0]?.text).timestamp),
         },
       });
-
-      // 根据身份证号码获取生日
-      // await table.setCellValue(
-      //   field.id,
-      //   recordIds[index],
-      //   calculateAgeFromTimestamp(extractBirthdayAndTimestamp(val[0]?.text).timestamp),
-      // );
     }
 
     await table.setRecords(_list);
@@ -235,10 +225,7 @@
    * @desc  : 生成性别列
    */
   async function generateSexRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("性别"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('性别');
 
     let _list = [];
     for (const record of recordList) {
@@ -249,8 +236,6 @@
       const val = await cell.val;
       if (!val) continue;
 
-      // FIXME 生成生日的这列，数组生成比较慢，需要排查原因
-
       // FIXME 处理数据
       _list.push({
         recordId: recordIds[index],
@@ -258,9 +243,6 @@
           [field.id]: getGenderByIdCard(val[0]?.text),
         },
       });
-
-      // 根据身份证号码获取生日
-      // await table.setCellValue(field.id, recordIds[index], getGenderByIdCard(val[0]?.text));
     }
     // FIXME 此处一次性全部替换
     await table.setRecords(_list);
@@ -271,17 +253,14 @@
     const checkCode = parseInt(idCard.charAt(16), 10);
 
     // 判断奇偶性来确定性别
-    return checkCode % 2 === 0 ? "女" : "男";
+    return checkCode % 2 === 0 ? '女' : '男';
   }
 
   /**
    * @desc  : 生成星座列
    */
   async function generateConstellationRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("星座"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('星座');
 
     let _list = [];
     for (const record of recordList) {
@@ -299,10 +278,8 @@
           [field.id]: getConstellationByIdCard(val[0]?.text),
         },
       });
-
-      // 根据身份证号码获取生日
-      // await table.setCellValue(field.id, recordIds[index], getConstellationByIdCard(val[0]?.text));
     }
+
     // FIXME 此处一次性全部替换
     await table.setRecords(_list);
   }
@@ -319,18 +296,18 @@
     const day = birthday.getDate();
 
     const constellations = [
-      { name: "白羊座", startMonth: 3, startDay: 21, endMonth: 4, endDay: 19 },
-      { name: "金牛座", startMonth: 4, startDay: 20, endMonth: 5, endDay: 20 },
-      { name: "双子座", startMonth: 5, startDay: 21, endMonth: 6, endDay: 21 },
-      { name: "巨蟹座", startMonth: 6, startDay: 22, endMonth: 7, endDay: 22 },
-      { name: "狮子座", startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
-      { name: "处女座", startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
-      { name: "天秤座", startMonth: 9, startDay: 23, endMonth: 10, endDay: 23 },
-      { name: "天蝎座", startMonth: 10, startDay: 24, endMonth: 11, endDay: 22 },
-      { name: "射手座", startMonth: 11, startDay: 23, endMonth: 12, endDay: 21 },
-      { name: "摩羯座", startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
-      { name: "水瓶座", startMonth: 1, startDay: 20, endMonth: 2, endDay: 18 },
-      { name: "双鱼座", startMonth: 2, startDay: 19, endMonth: 3, endDay: 20 },
+      { name: '白羊座', startMonth: 3, startDay: 21, endMonth: 4, endDay: 19 },
+      { name: '金牛座', startMonth: 4, startDay: 20, endMonth: 5, endDay: 20 },
+      { name: '双子座', startMonth: 5, startDay: 21, endMonth: 6, endDay: 21 },
+      { name: '巨蟹座', startMonth: 6, startDay: 22, endMonth: 7, endDay: 22 },
+      { name: '狮子座', startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
+      { name: '处女座', startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
+      { name: '天秤座', startMonth: 9, startDay: 23, endMonth: 10, endDay: 23 },
+      { name: '天蝎座', startMonth: 10, startDay: 24, endMonth: 11, endDay: 22 },
+      { name: '射手座', startMonth: 11, startDay: 23, endMonth: 12, endDay: 21 },
+      { name: '摩羯座', startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
+      { name: '水瓶座', startMonth: 1, startDay: 20, endMonth: 2, endDay: 18 },
+      { name: '双鱼座', startMonth: 2, startDay: 19, endMonth: 3, endDay: 20 },
     ];
 
     for (const constellation of constellations) {
@@ -343,17 +320,14 @@
     }
 
     // 如果没有匹配的星座，返回空字符串或其他默认值
-    return "";
+    return '';
   }
 
   /**
    * @desc  : 生成生肖列
    */
   async function generateAnimalRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("生肖"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('生肖');
 
     let _list = [];
     for (const record of recordList) {
@@ -371,9 +345,6 @@
           [field.id]: getChineseZodiacByIdCard(val[0]?.text),
         },
       });
-
-      // 根据身份证号码获取生日
-      // await table.setCellValue(field.id, recordIds[index], getChineseZodiacByIdCard(val[0]?.text));
     }
     // FIXME 此处一次性全部替换
     await table.setRecords(_list);
@@ -384,7 +355,7 @@
     const year = parseInt(idCard.substring(6, 10));
 
     // 生肖映射表
-    const zodiacMap = ["猴", "鸡", "狗", "猪", "鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊"];
+    const zodiacMap = ['猴', '鸡', '狗', '猪', '鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊'];
 
     // 计算生肖的索引
     const zodiacIndex = year % 12;
@@ -397,10 +368,7 @@
    * @desc  : 生成籍贯列
    */
   async function generateAddressRow() {
-    // const table = await base.getActiveTable();
-    // const recordList = await table.getRecordList();
-    const field = await table.getField("籍贯"); // 选择某个多行文本字段
-    // const recordIds = await table.getRecordIdList(); // 获取所有记录 id
+    const field = await table.getField('籍贯');
 
     let _list = [];
     for (const record of recordList) {
@@ -418,31 +386,22 @@
           [field.id]: getNativePlaceByIdCard(val[0]?.text),
         },
       });
-
-      // 根据身份证号码获取籍贯
-      // await table.setCellValue(field.id, recordIds[index], getNativePlaceByIdCard(val[0]?.text));
     }
+
     // FIXME 此处一次性全部替换
     await table.setRecords(_list);
   }
 
   function getNativePlaceByIdCard(idCard) {
-    const provinceCode = idCard.substring(0, 3) + "000";
+    const provinceCode = idCard.substring(0, 3) + '000';
     const countyCode = idCard.substring(0, 6);
 
     // 根据省和县行政区划代码获取地址
-    const province = addressCodeMap.province[provinceCode] || "未知省份";
-    const county = addressCodeMap.county[countyCode] || "未知县区";
+    const province = addressCodeMap.province[provinceCode] || '未知省份';
+    const county = addressCodeMap.county[countyCode] || '未知县区';
 
     return `${province}-${county}`;
   }
-
-  const age = ref(false);
-  const sex = ref(false);
-  const birthday = ref(false);
-  const constellation = ref(false);
-  const animal = ref(false);
-  const address = ref(false);
 </script>
 
 <template>
@@ -457,9 +416,9 @@
         >
           <el-option
             v-for="item in fieldOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
           />
         </el-select>
       </div>
