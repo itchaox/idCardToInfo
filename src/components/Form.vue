@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : wangchao
- * @LastTime   : 2023-11-27 09:49
+ * @LastTime   : 2023-11-27 09:55
  * @desc       : 
 -->
 <script setup>
@@ -46,13 +46,20 @@
   let recordIds;
   let tableMetaList;
 
+  const age = ref(false);
+  const sex = ref(false);
+  const birthday = ref(false);
+  const constellation = ref(false);
+  const animal = ref(false);
+  const address = ref(false);
+
   onMounted(async () => {
     table = await base.getActiveTable();
     recordList = await table.getRecordList();
     recordIds = await table.getRecordIdList(); // 获取所有记录 id
 
     tableMetaList = await table.getFieldMetaList();
-    fieldOptions.value = tableMetaList.map((item) => ({ value: item.id, label: item.name }));
+    fieldOptions.value = tableMetaList.filter((item) => item.type === 1);
   });
 
   // 根据身份证生成生日的信息
@@ -108,32 +115,32 @@
     const fieldMetaList = tableMetaList;
 
     if (birthday.value) {
-      const hasBirthday = fieldMetaList.find((item) => item.name === "生日");
+      const hasBirthday = tableMetaList.find((item) => item.name === "生日");
       await judgeCreate(hasBirthday, "生日", "DateTime", generateBirthdayRow);
     }
 
     if (age.value) {
-      const hasAge = fieldMetaList.find((item) => item.name === "年龄");
+      const hasAge = tableMetaList.find((item) => item.name === "年龄");
       await judgeCreate(hasAge, "年龄", "Number", generateAgeRow);
     }
 
     if (sex.value) {
-      const hasSex = fieldMetaList.find((item) => item.name === "性别");
+      const hasSex = tableMetaList.find((item) => item.name === "性别");
       await judgeCreate(hasSex, "性别", "Text", generateSexRow);
     }
 
     if (constellation.value) {
-      const hasConstellation = fieldMetaList.find((item) => item.name === "星座");
+      const hasConstellation = tableMetaList.find((item) => item.name === "星座");
       await judgeCreate(hasConstellation, "星座", "Text", generateConstellationRow);
     }
 
     if (animal.value) {
-      const hasAnimal = fieldMetaList.find((item) => item.name === "生肖");
+      const hasAnimal = tableMetaList.find((item) => item.name === "生肖");
       await judgeCreate(hasAnimal, "生肖", "Text", generateAnimalRow);
     }
 
     if (address.value) {
-      const hasAddress = fieldMetaList.find((item) => item.name === "籍贯");
+      const hasAddress = tableMetaList.find((item) => item.name === "籍贯");
       await judgeCreate(hasAddress, "籍贯", "Text", generateAddressRow);
     }
 
@@ -276,6 +283,7 @@
         },
       });
     }
+
     // FIXME 此处一次性全部替换
     await table.setRecords(_list);
   }
@@ -399,13 +407,6 @@
 
     return `${province}-${county}`;
   }
-
-  const age = ref(false);
-  const sex = ref(false);
-  const birthday = ref(false);
-  const constellation = ref(false);
-  const animal = ref(false);
-  const address = ref(false);
 </script>
 
 <template>
@@ -420,9 +421,9 @@
         >
           <el-option
             v-for="item in fieldOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
           />
         </el-select>
       </div>
