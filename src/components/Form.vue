@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : wangchao
- * @LastTime   : 2023-11-27 11:36
+ * @LastTime   : 2023-11-27 11:42
  * @desc       : 
 -->
 <script setup>
@@ -504,12 +504,11 @@
       v-if="birthday"
       class="birthday"
     >
-      <div class="title">生日格式</div>
+      <div class="title title-birthday">生日格式</div>
       <div>
         <el-select
           v-model="dateFormat"
           placeholder="请选择生日格式"
-          size="large"
         >
           <el-option
             v-for="item in dateFormatList"
@@ -588,6 +587,9 @@
 
   .birthday {
     margin-bottom: 14px;
+    .title-birthday {
+      font-size: 14px;
+    }
   }
 
   .switch {
