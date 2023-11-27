@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : wangchao
- * @LastTime   : 2023-11-27 10:17
+ * @LastTime   : 2023-11-27 11:36
  * @desc       : 
 -->
 <script setup>
@@ -52,6 +52,8 @@
   const constellation = ref(false);
   const animal = ref(false);
   const address = ref(false);
+
+  const isLoading = ref(false);
 
   onMounted(async () => {
     table = await base.getActiveTable();
@@ -123,11 +125,15 @@
     return idCard.charAt(17) === checkCode + "";
   }
 
+  /**
+   * @desc  : 确认按钮
+   */
   async function confirm() {
     if (!fieldId.value) {
       ElMessage({
         type: "error",
         message: "请选择身份证号码列!",
+        duration: 1500,
       });
       return;
     }
@@ -135,45 +141,42 @@
     ElMessage({
       type: "success",
       message: "开始生成数据~",
+      duration: 1500,
     });
 
+    isLoading.value = true;
+
+    const asyncTasks = [];
+
     const hasCheck = tableMetaList.find((item) => item.name === "身份证号码格式错误");
-    await judgeCreate(hasCheck, "身份证号码格式错误", "Text", generateCheckRow);
+    asyncTasks.push(judgeCreate(hasCheck, "身份证号码格式错误", "Text", generateCheckRow));
 
-    if (birthday.value) {
-      const hasBirthday = tableMetaList.find((item) => item.name === "生日");
-      await judgeCreate(hasBirthday, "生日", "DateTime", generateBirthdayRow);
-    }
+    const conditions = [
+      { value: birthday.value, name: "生日", type: "DateTime", func: generateBirthdayRow },
+      { value: age.value, name: "年龄", type: "Number", func: generateAgeRow },
+      { value: sex.value, name: "性别", type: "Text", func: generateSexRow },
+      { value: constellation.value, name: "星座", type: "Text", func: generateConstellationRow },
+      { value: animal.value, name: "生肖", type: "Text", func: generateAnimalRow },
+      { value: address.value, name: "籍贯", type: "Text", func: generateAddressRow },
+    ];
 
-    if (age.value) {
-      const hasAge = tableMetaList.find((item) => item.name === "年龄");
-      await judgeCreate(hasAge, "年龄", "Number", generateAgeRow);
-    }
+    conditions.forEach(({ value, name, type, func }) => {
+      if (value) {
+        const hasCondition = tableMetaList.find((item) => item.name === name);
+        asyncTasks.push(judgeCreate(hasCondition, name, type, func));
+      }
+    });
 
-    if (sex.value) {
-      const hasSex = tableMetaList.find((item) => item.name === "性别");
-      await judgeCreate(hasSex, "性别", "Text", generateSexRow);
-    }
-
-    if (constellation.value) {
-      const hasConstellation = tableMetaList.find((item) => item.name === "星座");
-      await judgeCreate(hasConstellation, "星座", "Text", generateConstellationRow);
-    }
-
-    if (animal.value) {
-      const hasAnimal = tableMetaList.find((item) => item.name === "生肖");
-      await judgeCreate(hasAnimal, "生肖", "Text", generateAnimalRow);
-    }
-
-    if (address.value) {
-      const hasAddress = tableMetaList.find((item) => item.name === "籍贯");
-      await judgeCreate(hasAddress, "籍贯", "Text", generateAddressRow);
-    }
+    // 使用 Promise.all 确保所有异步操作完成
+    await Promise.all(asyncTasks);
 
     ElMessage({
       type: "success",
       message: "数据生成结束!",
+      duration: 1500,
     });
+
+    isLoading.value = false;
   }
 
   /**
@@ -468,13 +471,20 @@
 
 <template>
   <div>
+    <div class="tip">
+      <div class="tip-text tip-title">操作步骤:</div>
+      <div class="tip-text">1. 必须选择身份证号码列</div>
+      <div class="tip-text">2. 按需选择需要获取的信息列</div>
+      <div class="tip-text">3. 点击【确认生成】按钮即可</div>
+      <div class="tip-text tip-info">Tips：</div>
+      <div class="tip-text">自动校验身份证号码格式，并生成错误列</div>
+    </div>
     <div class="idCard">
       <div class="title">身份证号码列</div>
       <div>
         <el-select
           v-model="fieldId"
           placeholder="请选择身份证号码列"
-          size="large"
         >
           <el-option
             v-for="item in fieldOptions"
@@ -536,14 +546,33 @@
       type="primary"
       class="btn"
       @click="confirm"
+      :loading="isLoading"
       >确认生成</el-button
     >
   </div>
 </template>
 
 <style scoped>
-  .idCard {
+  .tip {
+    color: #8f959e;
+    font-size: 12px;
     margin-bottom: 24px;
+    .tip-text {
+      margin-bottom: 6px;
+    }
+
+    .tip-info {
+      margin-top: 12px;
+    }
+
+    .tip-title {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+  }
+
+  .idCard {
+    margin-bottom: 18px;
   }
 
   .title {
