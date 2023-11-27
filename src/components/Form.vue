@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : wangchao
- * @LastTime   : 2023-11-27 09:55
+ * @LastTime   : 2023-11-27 10:17
  * @desc       : 
 -->
 <script setup>
@@ -97,6 +97,32 @@
     return age;
   }
 
+  /**
+   * @desc  : 校验身份证号码合法性
+   * @param  { string } idCard 身份证号码
+   * @return { boolean } 是否合法
+   */
+  function checkIdCard(idCard) {
+    const regExp = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$/;
+
+    if (!regExp.test(idCard)) {
+      return false;
+    }
+
+    const weightedFactors = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+    const checkCodeMap = [1, 0, "X", 9, 8, 7, 6, 5, 4, 3, 2];
+
+    let sum = 0;
+    for (let i = 0; i < 17; i++) {
+      sum += parseInt(idCard.charAt(i), 10) * weightedFactors[i];
+    }
+
+    const mod = sum % 11;
+    const checkCode = checkCodeMap[mod];
+
+    return idCard.charAt(17) === checkCode + "";
+  }
+
   async function confirm() {
     if (!fieldId.value) {
       ElMessage({
@@ -111,8 +137,8 @@
       message: "开始生成数据~",
     });
 
-    // 获取字段列表
-    const fieldMetaList = tableMetaList;
+    const hasCheck = tableMetaList.find((item) => item.name === "身份证号码格式错误");
+    await judgeCreate(hasCheck, "身份证号码格式错误", "Text", generateCheckRow);
 
     if (birthday.value) {
       const hasBirthday = tableMetaList.find((item) => item.name === "生日");
@@ -166,6 +192,35 @@
   }
 
   /**
+   * @desc  : 生成身份证号码格式错误列
+   */
+  async function generateCheckRow() {
+    const field = await table.getField("身份证号码格式错误");
+
+    let _list = [];
+    for (const record of recordList) {
+      const id = record.id;
+
+      // 获取索引
+      const index = recordList.recordIdList.findIndex((iId) => iId === id);
+      const cell = await record.getCellByField(fieldId.value);
+      const val = await cell.val;
+      if (!val) continue;
+
+      // FIXME 处理数据
+      _list.push({
+        recordId: recordIds[index],
+        fields: {
+          [field.id]: checkIdCard(val[0]?.text) ? "" : "【身份证号码格式错误】",
+        },
+      });
+    }
+
+    // FIXME 此处一次性全部替换
+    await table.setRecords(_list);
+  }
+
+  /**
    * @desc  : 生成生日列
    */
   async function generateBirthdayRow() {
@@ -187,7 +242,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: extractBirthdayAndTimestamp(val[0]?.text).timestamp,
+          [field.id]: checkIdCard(val[0]?.text) ? extractBirthdayAndTimestamp(val[0]?.text).timestamp : null,
         },
       });
     }
@@ -217,7 +272,9 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: calculateAgeFromTimestamp(extractBirthdayAndTimestamp(val[0]?.text).timestamp),
+          [field.id]: checkIdCard(val[0]?.text)
+            ? calculateAgeFromTimestamp(extractBirthdayAndTimestamp(val[0]?.text).timestamp)
+            : null,
         },
       });
     }
@@ -243,7 +300,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: getGenderByIdCard(val[0]?.text),
+          [field.id]: checkIdCard(val[0]?.text) ? getGenderByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -279,7 +336,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: getConstellationByIdCard(val[0]?.text),
+          [field.id]: checkIdCard(val[0]?.text) ? getConstellationByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -346,7 +403,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: getChineseZodiacByIdCard(val[0]?.text),
+          [field.id]: checkIdCard(val[0]?.text) ? getChineseZodiacByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -388,7 +445,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: getNativePlaceByIdCard(val[0]?.text),
+          [field.id]: checkIdCard(val[0]?.text) ? getNativePlaceByIdCard(val[0]?.text) : null,
         },
       });
     }
