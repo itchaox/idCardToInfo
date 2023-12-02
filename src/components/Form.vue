@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2023-12-02 13:54
+ * @LastTime   : 2023-12-02 14:28
  * @desc       : 
 -->
 <script setup>
@@ -558,8 +558,14 @@
       </div>
     </div>
 
+    <div class="row-title">
+      <span> 请选择需要生成的 </span>
+      <span class="high">信息列: </span>
+    </div>
+    <div class="row-tip">Tips: 表格中无对应信息列, 则会自动生成</div>
+
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">生日</span>列:</div>
+      <div class="switch-tip">生日</div>
       <el-switch v-model="birthday" />
     </div>
     <div
@@ -582,24 +588,24 @@
       </div>
     </div>
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">年龄</span>列:</div>
+      <div class="switch-tip">年龄</div>
       <el-switch v-model="age" />
     </div>
 
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">性别</span>列:</div>
+      <div class="switch-tip">性别</div>
       <el-switch v-model="sex" />
     </div>
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">星座</span>列:</div>
+      <div class="switch-tip">星座</div>
       <el-switch v-model="constellation" />
     </div>
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">生肖</span>列:</div>
+      <div class="switch-tip">生肖</div>
       <el-switch v-model="animal" />
     </div>
     <div class="switch">
-      <div class="switch-tip">是否生成<span class="high">籍贯</span>列:</div>
+      <div class="switch-tip">籍贯</div>
       <el-switch v-model="address" />
     </div>
 
@@ -632,6 +638,16 @@
     }
   }
 
+  .row-title {
+    margin-bottom: 6px;
+  }
+
+  .row-tip {
+    color: #8f959e;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+
   .idCard {
     margin-bottom: 18px;
   }
@@ -640,11 +656,11 @@
     font-size: 16px;
     font-weight: 700;
     color: rgb(31, 35, 41);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   .btn {
-    margin-top: 14px;
+    margin-top: 10px;
   }
 
   .birthday {
@@ -657,14 +673,14 @@
   .switch {
     display: flex;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 
     .switch-tip {
       margin-right: 5px;
     }
+  }
 
-    .high {
-      color: dodgerblue;
-    }
+  .high {
+    color: dodgerblue;
   }
 </style>
