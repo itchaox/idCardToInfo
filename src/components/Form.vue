@@ -2,15 +2,15 @@
  * @Version    : v1.00
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
- * @LastAuthor : wangchao
- * @LastTime   : 2023-11-27 11:42
+ * @LastAuthor : itchaox
+ * @LastTime   : 2023-12-02 13:54
  * @desc       : 
 -->
 <script setup>
-  import { ref, onMounted } from "vue";
-  import { bitable, FieldType, DateFormatter } from "@lark-base-open/js-sdk";
-  import { ElMessage, ElMessageBox } from "element-plus";
-  import { addressCodeMap } from "@/addressCodeMap";
+  import { ref, onMounted } from 'vue';
+  import { bitable, FieldType, DateFormatter } from '@lark-base-open/js-sdk';
+  import { ElMessage, ElMessageBox } from 'element-plus';
+  import { addressCodeMap } from '@/addressCodeMap';
 
   const base = bitable.base;
 
@@ -19,27 +19,27 @@
 
   let dateFormatList = [
     {
-      name: "格式: 01-30",
-      value: "MM-dd",
+      name: '格式: 01-30',
+      value: 'MM-dd',
     },
     {
-      name: "格式: 2021/01/30",
-      value: "yyyy/MM/dd",
+      name: '格式: 2021/01/30',
+      value: 'yyyy/MM/dd',
     },
     {
-      name: "格式: 2021-01-30",
-      value: "yyyy-MM-dd",
+      name: '格式: 2021-01-30',
+      value: 'yyyy-MM-dd',
     },
     {
-      name: "格式: 01/30/2021",
-      value: "MM/dd/yyyy",
+      name: '格式: 01/30/2021',
+      value: 'MM/dd/yyyy',
     },
     {
-      name: "格式: 30/01/2021",
-      value: "dd/MM/yyyy",
+      name: '格式: 30/01/2021',
+      value: 'dd/MM/yyyy',
     },
   ];
-  let dateFormat = ref("yyyy-MM-dd");
+  let dateFormat = ref('yyyy-MM-dd');
 
   let table;
   let recordList;
@@ -102,27 +102,88 @@
   /**
    * @desc  : 校验身份证号码合法性
    * @param  { string } idCard 身份证号码
-   * @return { boolean } 是否合法
+   * @return { object } 包含验证结果和可能的错误信息的对象
    */
   function checkIdCard(idCard) {
-    const regExp = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$/;
+    // 结果对象，包含是否合法和错误信息
+    const result = {
+      isValid: false,
+      errors: [],
+    };
 
-    if (!regExp.test(idCard)) {
-      return false;
+    // 校验身份证号码长度是否为18位（包括校验码）
+    if (idCard.length > 18) {
+      return {
+        isValid: false,
+        errorMessage: '长度大于18位',
+      };
     }
 
-    const weightedFactors = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
-    const checkCodeMap = [1, 0, "X", 9, 8, 7, 6, 5, 4, 3, 2];
+    if (idCard.length < 18) {
+      return {
+        isValid: false,
+        errorMessage: '长度小于18位',
+      };
+    }
 
+    const year = parseInt(idCard.substr(6, 2));
+    const isValidYear = year === 18 || year === 19 || year === 20;
+    // 校验年份是否合理
+    if (!isValidYear) {
+      result.errors.push('年份不合理');
+    }
+
+    const birthMonth = parseInt(idCard.substr(10, 2));
+    const isValidBirthMonth = birthMonth > 0 && birthMonth < 13;
+    // 校验月份是否合理
+    if (!isValidBirthMonth) {
+      result.errors.push('月份不合理');
+    }
+
+    const birthDay = parseInt(idCard.substr(12, 2), 10);
+    const isValidBirthDay = birthDay > 0 && birthDay < 32;
+    // 校验日期是否合理
+    if (!isValidBirthDay) {
+      result.errors.push('日期不合理');
+    }
+
+    // 权重因子和校验码映射
+    const weightedFactors = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+    const checkCodeMap = [1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2];
+
+    // 计算前17位的加权和
     let sum = 0;
     for (let i = 0; i < 17; i++) {
       sum += parseInt(idCard.charAt(i), 10) * weightedFactors[i];
     }
 
+    // 计算校验码
     const mod = sum % 11;
     const checkCode = checkCodeMap[mod];
 
-    return idCard.charAt(17) === checkCode + "";
+    // 校验身份证号码校验码是否正确
+    const isValidCheckCode = idCard.charAt(17) === checkCode + '';
+    if (!isValidCheckCode && isValidYear && isValidBirthMonth && isValidBirthDay) {
+      result.errors.push('其他类型格式错误');
+    }
+
+    // 正则表达式校验身份证号码格式
+    const regExp = /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$/;
+
+    if (!regExp.test(idCard) && isValidCheckCode && isValidYear && isValidBirthMonth && isValidBirthDay) {
+      result.errors.push('其他类型格式错误');
+    }
+
+    // 如果没有错误，将 isValid 设置为 true
+    if (result.errors.length === 0) {
+      result.isValid = true;
+    }
+
+    // 返回结果对象
+    return {
+      isValid: result.isValid,
+      errorMessage: result.errors.join('、'),
+    };
   }
 
   /**
@@ -131,16 +192,16 @@
   async function confirm() {
     if (!fieldId.value) {
       ElMessage({
-        type: "error",
-        message: "请选择身份证号码列!",
+        type: 'error',
+        message: '请选择身份证号码列!',
         duration: 1500,
       });
       return;
     }
 
     ElMessage({
-      type: "success",
-      message: "开始生成数据~",
+      type: 'success',
+      message: '开始生成数据~',
       duration: 1500,
     });
 
@@ -148,16 +209,16 @@
 
     const asyncTasks = [];
 
-    const hasCheck = tableMetaList.find((item) => item.name === "身份证号码格式错误");
-    asyncTasks.push(judgeCreate(hasCheck, "身份证号码格式错误", "Text", generateCheckRow));
+    const hasCheck = tableMetaList.find((item) => item.name === '身份证号码格式错误');
+    asyncTasks.push(judgeCreate(hasCheck, '身份证号码格式错误', 'Text', generateCheckRow));
 
     const conditions = [
-      { value: birthday.value, name: "生日", type: "DateTime", func: generateBirthdayRow },
-      { value: age.value, name: "年龄", type: "Number", func: generateAgeRow },
-      { value: sex.value, name: "性别", type: "Text", func: generateSexRow },
-      { value: constellation.value, name: "星座", type: "Text", func: generateConstellationRow },
-      { value: animal.value, name: "生肖", type: "Text", func: generateAnimalRow },
-      { value: address.value, name: "籍贯", type: "Text", func: generateAddressRow },
+      { value: birthday.value, name: '生日', type: 'DateTime', func: generateBirthdayRow },
+      { value: age.value, name: '年龄', type: 'Number', func: generateAgeRow },
+      { value: sex.value, name: '性别', type: 'Text', func: generateSexRow },
+      { value: constellation.value, name: '星座', type: 'Text', func: generateConstellationRow },
+      { value: animal.value, name: '生肖', type: 'Text', func: generateAnimalRow },
+      { value: address.value, name: '籍贯', type: 'Text', func: generateAddressRow },
     ];
 
     conditions.forEach(({ value, name, type, func }) => {
@@ -171,8 +232,8 @@
     await Promise.all(asyncTasks);
 
     ElMessage({
-      type: "success",
-      message: "数据生成结束!",
+      type: 'success',
+      message: '数据生成结束!',
       duration: 1500,
     });
 
@@ -191,14 +252,14 @@
       await table.addField({ type: FieldType[type], name: label });
     }
 
-    fn();
+    await fn();
   }
 
   /**
    * @desc  : 生成身份证号码格式错误列
    */
   async function generateCheckRow() {
-    const field = await table.getField("身份证号码格式错误");
+    const field = await table.getField('身份证号码格式错误');
 
     let _list = [];
     for (const record of recordList) {
@@ -214,7 +275,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? "" : "【身份证号码格式错误】",
+          [field.id]: checkIdCard(val[0]?.text).isValid ? '' : checkIdCard(val[0]?.text).errorMessage,
         },
       });
     }
@@ -227,7 +288,7 @@
    * @desc  : 生成生日列
    */
   async function generateBirthdayRow() {
-    const field = await table.getField("生日");
+    const field = await table.getField('生日');
 
     await field.setDateFormat(dateFormat.value);
 
@@ -245,7 +306,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? extractBirthdayAndTimestamp(val[0]?.text).timestamp : null,
+          [field.id]: checkIdCard(val[0]?.text).isValid ? extractBirthdayAndTimestamp(val[0]?.text).timestamp : null,
         },
       });
     }
@@ -258,9 +319,9 @@
    * @desc  : 生成年龄列
    */
   async function generateAgeRow() {
-    const field = await table.getField("年龄");
+    const field = await table.getField('年龄');
 
-    await field.setFormatter("0");
+    await field.setFormatter('0');
 
     let _list = [];
     for (const record of recordList) {
@@ -275,7 +336,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text)
+          [field.id]: checkIdCard(val[0]?.text).isValid
             ? calculateAgeFromTimestamp(extractBirthdayAndTimestamp(val[0]?.text).timestamp)
             : null,
         },
@@ -288,7 +349,7 @@
    * @desc  : 生成性别列
    */
   async function generateSexRow() {
-    const field = await table.getField("性别");
+    const field = await table.getField('性别');
 
     let _list = [];
     for (const record of recordList) {
@@ -303,7 +364,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? getGenderByIdCard(val[0]?.text) : null,
+          [field.id]: checkIdCard(val[0]?.text).isValid ? getGenderByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -317,14 +378,14 @@
     const checkCode = parseInt(idCard.charAt(16), 10);
 
     // 判断奇偶性来确定性别
-    return checkCode % 2 === 0 ? "女" : "男";
+    return checkCode % 2 === 0 ? '女' : '男';
   }
 
   /**
    * @desc  : 生成星座列
    */
   async function generateConstellationRow() {
-    const field = await table.getField("星座");
+    const field = await table.getField('星座');
 
     let _list = [];
     for (const record of recordList) {
@@ -339,7 +400,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? getConstellationByIdCard(val[0]?.text) : null,
+          [field.id]: checkIdCard(val[0]?.text).isValid ? getConstellationByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -360,18 +421,18 @@
     const day = birthday.getDate();
 
     const constellations = [
-      { name: "白羊座", startMonth: 3, startDay: 21, endMonth: 4, endDay: 19 },
-      { name: "金牛座", startMonth: 4, startDay: 20, endMonth: 5, endDay: 20 },
-      { name: "双子座", startMonth: 5, startDay: 21, endMonth: 6, endDay: 21 },
-      { name: "巨蟹座", startMonth: 6, startDay: 22, endMonth: 7, endDay: 22 },
-      { name: "狮子座", startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
-      { name: "处女座", startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
-      { name: "天秤座", startMonth: 9, startDay: 23, endMonth: 10, endDay: 23 },
-      { name: "天蝎座", startMonth: 10, startDay: 24, endMonth: 11, endDay: 22 },
-      { name: "射手座", startMonth: 11, startDay: 23, endMonth: 12, endDay: 21 },
-      { name: "摩羯座", startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
-      { name: "水瓶座", startMonth: 1, startDay: 20, endMonth: 2, endDay: 18 },
-      { name: "双鱼座", startMonth: 2, startDay: 19, endMonth: 3, endDay: 20 },
+      { name: '白羊座', startMonth: 3, startDay: 21, endMonth: 4, endDay: 19 },
+      { name: '金牛座', startMonth: 4, startDay: 20, endMonth: 5, endDay: 20 },
+      { name: '双子座', startMonth: 5, startDay: 21, endMonth: 6, endDay: 21 },
+      { name: '巨蟹座', startMonth: 6, startDay: 22, endMonth: 7, endDay: 22 },
+      { name: '狮子座', startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
+      { name: '处女座', startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
+      { name: '天秤座', startMonth: 9, startDay: 23, endMonth: 10, endDay: 23 },
+      { name: '天蝎座', startMonth: 10, startDay: 24, endMonth: 11, endDay: 22 },
+      { name: '射手座', startMonth: 11, startDay: 23, endMonth: 12, endDay: 21 },
+      { name: '摩羯座', startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
+      { name: '水瓶座', startMonth: 1, startDay: 20, endMonth: 2, endDay: 18 },
+      { name: '双鱼座', startMonth: 2, startDay: 19, endMonth: 3, endDay: 20 },
     ];
 
     for (const constellation of constellations) {
@@ -384,14 +445,14 @@
     }
 
     // 如果没有匹配的星座，返回空字符串或其他默认值
-    return "";
+    return '';
   }
 
   /**
    * @desc  : 生成生肖列
    */
   async function generateAnimalRow() {
-    const field = await table.getField("生肖");
+    const field = await table.getField('生肖');
 
     let _list = [];
     for (const record of recordList) {
@@ -406,7 +467,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? getChineseZodiacByIdCard(val[0]?.text) : null,
+          [field.id]: checkIdCard(val[0]?.text).isValid ? getChineseZodiacByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -420,7 +481,7 @@
     const year = parseInt(idCard.substring(6, 10));
 
     // 生肖映射表
-    const zodiacMap = ["猴", "鸡", "狗", "猪", "鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊"];
+    const zodiacMap = ['猴', '鸡', '狗', '猪', '鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊'];
 
     // 计算生肖的索引
     const zodiacIndex = year % 12;
@@ -433,7 +494,8 @@
    * @desc  : 生成籍贯列
    */
   async function generateAddressRow() {
-    const field = await table.getField("籍贯");
+    console.log(2);
+    const field = await table.getField('籍贯');
 
     let _list = [];
     for (const record of recordList) {
@@ -448,7 +510,7 @@
       _list.push({
         recordId: recordIds[index],
         fields: {
-          [field.id]: checkIdCard(val[0]?.text) ? getNativePlaceByIdCard(val[0]?.text) : null,
+          [field.id]: checkIdCard(val[0]?.text).isValid ? getNativePlaceByIdCard(val[0]?.text) : null,
         },
       });
     }
@@ -458,12 +520,12 @@
   }
 
   function getNativePlaceByIdCard(idCard) {
-    const provinceCode = idCard.substring(0, 3) + "000";
+    const provinceCode = idCard.substring(0, 3) + '000';
     const countyCode = idCard.substring(0, 6);
 
     // 根据省和县行政区划代码获取地址
-    const province = addressCodeMap.province[provinceCode] || "未知省份";
-    const county = addressCodeMap.county[countyCode] || "未知县区";
+    const province = addressCodeMap.province[provinceCode] || '未知省份';
+    const county = addressCodeMap.county[countyCode] || '未知县区';
 
     return `${province}-${county}`;
   }
