@@ -3,13 +3,13 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2023-12-02 14:28
+ * @LastTime   : 2023-12-14 23:14
  * @desc       : 
 -->
 <script setup>
   import { ref, onMounted } from 'vue';
-  import { bitable, FieldType, DateFormatter } from '@lark-base-open/js-sdk';
-  import { ElMessage, ElMessageBox } from 'element-plus';
+  import { bitable, FieldType } from '@lark-base-open/js-sdk';
+  import { ElMessage } from 'element-plus';
   import { addressCodeMap } from '@/addressCodeMap';
 
   const base = bitable.base;
@@ -39,7 +39,7 @@
       value: 'dd/MM/yyyy',
     },
   ];
-  let dateFormat = ref('yyyy-MM-dd');
+  let dateFormat = ref('MM-dd');
 
   let table;
   let recordList;
@@ -54,6 +54,26 @@
   const address = ref(false);
 
   const isLoading = ref(false);
+
+  let addressFormatList = [
+    {
+      name: '格式: 湖南长沙',
+      value: '',
+    },
+    {
+      name: '格式: 湖南-长沙',
+      value: '-',
+    },
+    {
+      name: '格式: 湖南_长沙',
+      value: '_',
+    },
+    {
+      name: '格式: 湖南/长沙',
+      value: '/',
+    },
+  ];
+  let addressFormat = ref('-');
 
   onMounted(async () => {
     table = await base.getActiveTable();
@@ -210,7 +230,7 @@
     const asyncTasks = [];
 
     const hasCheck = tableMetaList.find((item) => item.name === '身份证号码格式错误');
-    asyncTasks.push(judgeCreate(hasCheck, '身份证号码格式错误', 'Text', generateCheckRow));
+    await asyncTasks.push(judgeCreate(hasCheck, '身份证号码格式错误', 'Text', generateCheckRow));
 
     const conditions = [
       { value: birthday.value, name: '生日', type: 'DateTime', func: generateBirthdayRow },
@@ -322,6 +342,9 @@
     const field = await table.getField('年龄');
 
     await field.setFormatter('0');
+    // const view = await table.getActiveView();
+    // const a = await view.setFieldWidth(fieldId.value, 60);
+    // console.log('a', a);
 
     let _list = [];
     for (const record of recordList) {
@@ -494,7 +517,6 @@
    * @desc  : 生成籍贯列
    */
   async function generateAddressRow() {
-    console.log(2);
     const field = await table.getField('籍贯');
 
     let _list = [];
@@ -520,14 +542,14 @@
   }
 
   function getNativePlaceByIdCard(idCard) {
-    const provinceCode = idCard.substring(0, 3) + '000';
+    const provinceCode = idCard.substring(0, 2);
     const countyCode = idCard.substring(0, 6);
 
     // 根据省和县行政区划代码获取地址
     const province = addressCodeMap.province[provinceCode] || '未知省份';
     const county = addressCodeMap.county[countyCode] || '未知县区';
 
-    return `${province}-${county}`;
+    return `${province}${addressFormat.value}${county}`;
   }
 </script>
 
@@ -607,6 +629,23 @@
     <div class="switch">
       <div class="switch-tip">籍贯</div>
       <el-switch v-model="address" />
+    </div>
+    <div
+      v-if="address"
+      class="birthday"
+    >
+      <div class="title title-birthday">籍贯格式</div>
+      <el-select
+        v-model="addressFormat"
+        placeholder="请选择籍贯格式"
+      >
+        <el-option
+          v-for="item in addressFormatList"
+          :key="item.value"
+          :label="item.name"
+          :value="item.value"
+        />
+      </el-select>
     </div>
 
     <el-button
