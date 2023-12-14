@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2023-12-14 23:14
+ * @LastTime   : 2023-12-14 23:39
  * @desc       : 
 -->
 <script setup>
@@ -309,6 +309,8 @@
    */
   async function generateBirthdayRow() {
     const field = await table.getField('生日');
+    const view = await table.getActiveView();
+    await view.setFieldWidth(field.id, 100);
 
     await field.setDateFormat(dateFormat.value);
 
@@ -340,11 +342,10 @@
    */
   async function generateAgeRow() {
     const field = await table.getField('年龄');
-
     await field.setFormatter('0');
-    // const view = await table.getActiveView();
-    // const a = await view.setFieldWidth(fieldId.value, 60);
-    // console.log('a', a);
+
+    const view = await table.getActiveView();
+    await view.setFieldWidth(field.id, 20);
 
     let _list = [];
     for (const record of recordList) {
@@ -373,6 +374,8 @@
    */
   async function generateSexRow() {
     const field = await table.getField('性别');
+    const view = await table.getActiveView();
+    await view.setFieldWidth(field.id, 20);
 
     let _list = [];
     for (const record of recordList) {
@@ -409,6 +412,8 @@
    */
   async function generateConstellationRow() {
     const field = await table.getField('星座');
+    const view = await table.getActiveView();
+    await view.setFieldWidth(field.id, 20);
 
     let _list = [];
     for (const record of recordList) {
@@ -476,6 +481,8 @@
    */
   async function generateAnimalRow() {
     const field = await table.getField('生肖');
+    const view = await table.getActiveView();
+    await view.setFieldWidth(field.id, 20);
 
     let _list = [];
     for (const record of recordList) {
