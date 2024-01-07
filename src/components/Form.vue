@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2024-01-07 14:59
+ * @LastTime   : 2024-01-07 15:16
  * @desc       : 
 -->
 <script setup>
@@ -231,7 +231,7 @@
 
     ElMessage({
       type: 'success',
-      message: '开始生成数据~',
+      message: '开始生成数据',
       duration: 1500,
     });
 
@@ -264,7 +264,7 @@
 
     ElMessage({
       type: 'success',
-      message: '数据生成结束!',
+      message: '数据生成结束',
       duration: 1500,
     });
 
@@ -577,6 +577,21 @@
   }
 
   async function ocr() {
+    if (!fieldAttachmentId.value) {
+      ElMessage({
+        type: 'error',
+        message: '请选择身份证图片列!',
+        duration: 1500,
+      });
+      return;
+    }
+
+    ElMessage({
+      type: 'success',
+      message: '开始识别图片',
+      duration: 1500,
+    });
+
     isLoading.value = true;
     const has = tableMetaList.find((item) => item.name === '身份证号码');
 
@@ -703,26 +718,29 @@
       <div class="switch">
         <div class="switch-tip">生日</div>
         <el-switch v-model="birthday" />
-      </div>
-      <div
-        v-if="birthday"
-        class="birthday"
-      >
-        <div class="title title-birthday">生日格式</div>
-        <div>
-          <el-select
-            v-model="dateFormat"
-            placeholder="请选择生日格式"
-          >
-            <el-option
-              v-for="item in dateFormatList"
-              :key="item.value"
-              :label="item.name"
-              :value="item.value"
-            />
-          </el-select>
+
+        <div
+          v-if="birthday"
+          class="birthday"
+        >
+          <!-- <div class="title-birthday">生日格式：</div> -->
+          <div>
+            <el-select
+              v-model="dateFormat"
+              placeholder="请选择生日格式"
+              size="small"
+            >
+              <el-option
+                v-for="item in dateFormatList"
+                :key="item.value"
+                :label="item.name"
+                :value="item.value"
+              />
+            </el-select>
+          </div>
         </div>
       </div>
+
       <div class="switch">
         <div class="switch-tip">年龄</div>
         <el-switch v-model="age" />
@@ -743,23 +761,25 @@
       <div class="switch">
         <div class="switch-tip">籍贯</div>
         <el-switch v-model="address" />
-      </div>
-      <div
-        v-if="address"
-        class="birthday"
-      >
-        <div class="title title-birthday">籍贯格式</div>
-        <el-select
-          v-model="addressFormat"
-          placeholder="请选择籍贯格式"
+
+        <div
+          v-if="address"
+          class="birthday"
         >
-          <el-option
-            v-for="item in addressFormatList"
-            :key="item.value"
-            :label="item.name"
-            :value="item.value"
-          />
-        </el-select>
+          <!-- <div class="title title-birthday">籍贯格式</div> -->
+          <el-select
+            v-model="addressFormat"
+            placeholder="请选择籍贯格式"
+            size="small"
+          >
+            <el-option
+              v-for="item in addressFormatList"
+              :key="item.value"
+              :label="item.name"
+              :value="item.value"
+            />
+          </el-select>
+        </div>
       </div>
 
       <el-button
@@ -824,7 +844,8 @@
   }
 
   .birthday {
-    margin-bottom: 14px;
+    display: flex;
+    margin-left: 16px;
     .title-birthday {
       font-size: 14px;
     }
