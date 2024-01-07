@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2024-01-07 16:09
+ * @LastTime   : 2024-01-07 16:18
  * @desc       : 
 -->
 <script setup>
@@ -293,7 +293,7 @@
     const has = tableMetaList.find((item) => item.name === '身份证号码格式错误');
 
     if (!has) {
-      await table.addField({ type: 1, name: '身份证号码' });
+      await table.addField({ type: 1, name: '身份证号码格式错误' });
     }
 
     const field = await table.getField('身份证号码格式错误');
