@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2023-12-14 23:39
+ * @LastTime   : 2024-01-07 14:59
  * @desc       : 
 -->
 <script setup>
@@ -11,11 +11,16 @@
   import { bitable, FieldType } from '@lark-base-open/js-sdk';
   import { ElMessage } from 'element-plus';
   import { addressCodeMap } from '@/addressCodeMap';
+  import Tesseract from 'tesseract.js';
+  import { CaretRight, CircleCheckFilled } from '@element-plus/icons-vue';
 
   const base = bitable.base;
 
   const fieldOptions = ref();
   const fieldId = ref();
+
+  const fieldAttachmentOptions = ref([]);
+  const fieldAttachmentId = ref();
 
   let dateFormatList = [
     {
@@ -81,7 +86,12 @@
     recordIds = await table.getRecordIdList(); // 获取所有记录 id
 
     tableMetaList = await table.getFieldMetaList();
+
+    // 文本列
     fieldOptions.value = tableMetaList.filter((item) => item.type === 1);
+
+    // 附件列
+    fieldAttachmentOptions.value = tableMetaList.filter((item) => item.type === 17);
   });
 
   // 根据身份证生成生日的信息
@@ -229,8 +239,9 @@
 
     const asyncTasks = [];
 
-    const hasCheck = tableMetaList.find((item) => item.name === '身份证号码格式错误');
-    await asyncTasks.push(judgeCreate(hasCheck, '身份证号码格式错误', 'Text', generateCheckRow));
+    // const hasCheck = tableMetaList.find((item) => item.name === '身份证号码格式错误');
+    // await asyncTasks.push(judgeCreate(hasCheck, '身份证号码格式错误', 'Text', generateCheckRow));
+    await generateCheckRow();
 
     const conditions = [
       { value: birthday.value, name: '生日', type: 'DateTime', func: generateBirthdayRow },
@@ -279,6 +290,12 @@
    * @desc  : 生成身份证号码格式错误列
    */
   async function generateCheckRow() {
+    const has = tableMetaList.find((item) => item.name === '身份证号码格式错误');
+
+    if (!has) {
+      await table.addField({ type: 1, name: '身份证号码' });
+    }
+
     const field = await table.getField('身份证号码格式错误');
 
     let _list = [];
@@ -558,110 +575,202 @@
 
     return `${province}${addressFormat.value}${county}`;
   }
+
+  async function ocr() {
+    isLoading.value = true;
+    const has = tableMetaList.find((item) => item.name === '身份证号码');
+
+    if (!has) {
+      await table.addField({ type: 1, name: '身份证号码' });
+    }
+
+    const field = await table.getField('身份证号码');
+
+    const attachmentField = await table.getField(fieldAttachmentId.value);
+    let _list = [];
+
+    for (const record of recordList) {
+      const id = record.id;
+
+      const attachmentUrls = await attachmentField.getAttachmentUrls(id);
+      const imageUrl = attachmentUrls[0];
+
+      const { data } = await Tesseract.recognize(
+        imageUrl,
+        'chi_sim', // 使用中文识别语言模型
+      );
+
+      const idCard = data?.words[data?.words?.length - 1]?.text;
+      // FIXME  处理 身份证号码列数据, 写入身份证号码
+
+      // 获取索引
+      const index = recordList.recordIdList.findIndex((iId) => iId === id);
+      const cell = await record.getCellByField(fieldAttachmentId.value);
+      const val = await cell.val;
+      if (!val) continue;
+
+      // FIXME 处理数据
+      _list.push({
+        recordId: recordIds[index],
+        fields: {
+          [field.id]: idCard ? idCard : '图片识别有误',
+        },
+      });
+    }
+
+    // FIXME 此处一次性全部替换
+    await table.setRecords(_list);
+
+    tableMetaList = await table.getFieldMetaList();
+
+    // 文本列
+    fieldOptions.value = tableMetaList.filter((item) => item.type === 1);
+
+    isLoading.value = false;
+    ElMessage.success({
+      message: '图片识别结束',
+      duration: 1500,
+      showClose: true,
+    });
+  }
 </script>
 
 <template>
   <div>
     <div class="tip">
       <div class="tip-text tip-title">操作步骤:</div>
-      <div class="tip-text">1. 必须选择身份证号码列</div>
-      <div class="tip-text">2. 按需选择需要获取的信息列</div>
-      <div class="tip-text">3. 点击【确认生成】按钮即可</div>
+      <div class="tip-text">1. 可选择直接从身份证图片中提取号码列</div>
+      <div class="tip-text">2. 选择身份证号码列</div>
+      <div class="tip-text">3. 按需选择需要获取的信息列</div>
+      <div class="tip-text">4. 点击【确认生成】按钮即可</div>
       <div class="tip-text tip-info">Tips：</div>
-      <div class="tip-text">自动校验身份证号码格式，并生成错误列</div>
-    </div>
-    <div class="idCard">
-      <div class="title">身份证号码列</div>
-      <div>
-        <el-select
-          v-model="fieldId"
-          placeholder="请选择身份证号码列"
-        >
-          <el-option
-            v-for="item in fieldOptions"
-            :key="item.id"
-            :label="item.name"
-            :value="item.id"
-          />
-        </el-select>
-      </div>
+      <div class="tip-text">1. 自动校验身份证号码格式，并生成错误列</div>
+      <div class="tip-text">2. 表格中无对应信息列, 则会自动生成</div>
     </div>
 
-    <div class="row-title">
-      <span> 请选择需要生成的 </span>
-      <span class="high">信息列: </span>
-    </div>
-    <div class="row-tip">Tips: 表格中无对应信息列, 则会自动生成</div>
-
-    <div class="switch">
-      <div class="switch-tip">生日</div>
-      <el-switch v-model="birthday" />
-    </div>
     <div
-      v-if="birthday"
-      class="birthday"
+      v-loading="isLoading"
+      element-loading-text="加载中..."
     >
-      <div class="title title-birthday">生日格式</div>
-      <div>
+      <div class="idCard">
+        <div>身份证图片列：</div>
+        <div>
+          <el-select
+            v-model="fieldAttachmentId"
+            placeholder="请选择身份证图片列"
+          >
+            <el-option
+              v-for="item in fieldAttachmentOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </div>
+      </div>
+      <el-button
+        class="mb18"
+        type="primary"
+        @click="ocr"
+      >
+        <el-icon size="20"><CaretRight /></el-icon>
+        开始识别
+      </el-button>
+
+      <div class="idCard mb18">
+        <div>身份证号码列：</div>
+        <div>
+          <el-select
+            v-model="fieldId"
+            placeholder="请选择身份证号码列"
+          >
+            <el-option
+              v-for="item in fieldOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </div>
+      </div>
+
+      <!-- <div class="row-title">
+        <span> 请选择需要生成的 </span>
+        <span class="high">信息列: </span>
+      </div> -->
+      <!-- <div class="row-tip">Tips: 表格中无对应信息列, 则会自动生成</div> -->
+
+      <div class="switch">
+        <div class="switch-tip">生日</div>
+        <el-switch v-model="birthday" />
+      </div>
+      <div
+        v-if="birthday"
+        class="birthday"
+      >
+        <div class="title title-birthday">生日格式</div>
+        <div>
+          <el-select
+            v-model="dateFormat"
+            placeholder="请选择生日格式"
+          >
+            <el-option
+              v-for="item in dateFormatList"
+              :key="item.value"
+              :label="item.name"
+              :value="item.value"
+            />
+          </el-select>
+        </div>
+      </div>
+      <div class="switch">
+        <div class="switch-tip">年龄</div>
+        <el-switch v-model="age" />
+      </div>
+
+      <div class="switch">
+        <div class="switch-tip">性别</div>
+        <el-switch v-model="sex" />
+      </div>
+      <div class="switch">
+        <div class="switch-tip">星座</div>
+        <el-switch v-model="constellation" />
+      </div>
+      <div class="switch">
+        <div class="switch-tip">生肖</div>
+        <el-switch v-model="animal" />
+      </div>
+      <div class="switch">
+        <div class="switch-tip">籍贯</div>
+        <el-switch v-model="address" />
+      </div>
+      <div
+        v-if="address"
+        class="birthday"
+      >
+        <div class="title title-birthday">籍贯格式</div>
         <el-select
-          v-model="dateFormat"
-          placeholder="请选择生日格式"
+          v-model="addressFormat"
+          placeholder="请选择籍贯格式"
         >
           <el-option
-            v-for="item in dateFormatList"
+            v-for="item in addressFormatList"
             :key="item.value"
             :label="item.name"
             :value="item.value"
           />
         </el-select>
       </div>
-    </div>
-    <div class="switch">
-      <div class="switch-tip">年龄</div>
-      <el-switch v-model="age" />
-    </div>
 
-    <div class="switch">
-      <div class="switch-tip">性别</div>
-      <el-switch v-model="sex" />
-    </div>
-    <div class="switch">
-      <div class="switch-tip">星座</div>
-      <el-switch v-model="constellation" />
-    </div>
-    <div class="switch">
-      <div class="switch-tip">生肖</div>
-      <el-switch v-model="animal" />
-    </div>
-    <div class="switch">
-      <div class="switch-tip">籍贯</div>
-      <el-switch v-model="address" />
-    </div>
-    <div
-      v-if="address"
-      class="birthday"
-    >
-      <div class="title title-birthday">籍贯格式</div>
-      <el-select
-        v-model="addressFormat"
-        placeholder="请选择籍贯格式"
+      <el-button
+        type="primary"
+        class="btn"
+        @click="confirm"
       >
-        <el-option
-          v-for="item in addressFormatList"
-          :key="item.value"
-          :label="item.name"
-          :value="item.value"
-        />
-      </el-select>
+        <el-icon size="16"><CircleCheckFilled /></el-icon>
+        <span>确认生成</span>
+      </el-button>
     </div>
-
-    <el-button
-      type="primary"
-      class="btn"
-      @click="confirm"
-      :loading="isLoading"
-      >确认生成</el-button
-    >
   </div>
 </template>
 
@@ -695,6 +804,11 @@
   }
 
   .idCard {
+    display: flex;
+    align-items: center;
+  }
+
+  .mb18 {
     margin-bottom: 18px;
   }
 
