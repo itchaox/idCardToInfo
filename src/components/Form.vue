@@ -3,7 +3,7 @@
  * @Author     : itchaox
  * @Date       : 2023-09-26 15:10
  * @LastAuthor : itchaox
- * @LastTime   : 2024-01-07 15:16
+ * @LastTime   : 2024-01-07 16:09
  * @desc       : 
 -->
 <script setup>
@@ -12,7 +12,7 @@
   import { ElMessage } from 'element-plus';
   import { addressCodeMap } from '@/addressCodeMap';
   import Tesseract from 'tesseract.js';
-  import { CaretRight, CircleCheckFilled } from '@element-plus/icons-vue';
+  import { CaretRight, CircleCheckFilled, InfoFilled } from '@element-plus/icons-vue';
 
   const base = bitable.base;
 
@@ -607,7 +607,13 @@
     for (const record of recordList) {
       const id = record.id;
 
-      const attachmentUrls = await attachmentField.getAttachmentUrls(id);
+      let attachmentUrls = [];
+      try {
+        attachmentUrls = await attachmentField.getAttachmentUrls(id);
+      } catch (error) {
+        continue;
+      }
+
       const imageUrl = attachmentUrls[0];
 
       const { data } = await Tesseract.recognize(
@@ -615,7 +621,18 @@
         'chi_sim', // 使用中文识别语言模型
       );
 
-      const idCard = data?.words[data?.words?.length - 1]?.text;
+      // const idCard = data?.words[data?.words?.length - 1]?.text;
+      const _text = data?.text;
+
+      const regex = /(\d{18}|\d{17}X)/g;
+      const match = _text.match(regex);
+      let idCard;
+      if (match && match.length > 0) {
+        idCard = match[0];
+      } else {
+        idCard = '图片识别错误，请手动输入';
+      }
+
       // FIXME  处理 身份证号码列数据, 写入身份证号码
 
       // 获取索引
@@ -648,6 +665,8 @@
       showClose: true,
     });
   }
+
+  const collapse = ref(0);
 </script>
 
 <template>
@@ -658,9 +677,24 @@
       <div class="tip-text">2. 选择身份证号码列</div>
       <div class="tip-text">3. 按需选择需要获取的信息列</div>
       <div class="tip-text">4. 点击【确认生成】按钮即可</div>
-      <div class="tip-text tip-info">Tips：</div>
-      <div class="tip-text">1. 自动校验身份证号码格式，并生成错误列</div>
-      <div class="tip-text">2. 表格中无对应信息列, 则会自动生成</div>
+      <el-collapse
+        v-model="collapse"
+        class="collapse"
+      >
+        <!-- FIXME 筛选 -->
+        <el-collapse-item name="1">
+          <template #title>
+            <el-icon class="mr5"><InfoFilled /></el-icon>
+            <span>更多操作信息</span>
+          </template>
+          <div class="collapse-tip">
+            <div>1. 图片识别存在错误的可能性，请自行判断准确性</div>
+            <div>2. 为提高身份证图片识别率，请确保图片保持水平方向</div>
+            <div>3. 自动校验身份证号码格式，并生成错误列</div>
+            <div>4. 表格中无对应信息列, 则会自动生成</div>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <div
@@ -863,5 +897,35 @@
 
   .high {
     color: dodgerblue;
+  }
+
+  .mr5 {
+    margin-right: 5px;
+  }
+
+  .collapse {
+    margin: 8px 0;
+
+    :deep(.el-collapse-item__content) {
+      padding-bottom: 0;
+    }
+  }
+
+  .collapse-tip {
+    color: #8f959e;
+    font-size: 12px;
+    margin-bottom: 24px;
+    .tip-text {
+      /* margin-bottom: 6px; */
+    }
+
+    .tip-info {
+      margin-top: 12px;
+    }
+
+    .tip-title {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
   }
 </style>
